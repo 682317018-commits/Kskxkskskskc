@@ -1,0 +1,247 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+------------------------------------------------
+-- WINDOW
+------------------------------------------------
+local Window = Rayfield:CreateWindow({
+   Name = "lkkyu888",
+   LoadingTitle = "ig@lkkyu09_",
+   LoadingSubtitle = "by lkkyu",
+   ConfigurationSaving = { Enabled = false },
+   Discord = { Enabled = false },
+   KeySystem = false
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+------------------------------------------------
+-- VALUES (FORCE)
+------------------------------------------------
+local desiredSpeed = 16
+local desiredJump = 50
+
+local TeamCheckEnabled = false
+local FriendCheckEnabled = false
+local WallCheckEnabled = false
+
+------------------------------------------------
+-- MAIN TAB
+------------------------------------------------
+
+local MainTab = Window:CreateTab("🏠 หน้าหลัก", nil) -- Title, Image
+local MainSection = MainTab:CreateSection("Main")
+
+Rayfield:Notify({
+   Title = "You executed the script",
+   Content = "Very cool gui",
+   Duration = 5,
+   Image = 13047715178,
+   Actions = { -- Notification Buttons
+      Ignore = {
+         Name = "Okay!",
+         Callback = function()
+         print("The user tapped Okay!")
+      end
+   },
+},
+})
+
+local Button = MainTab:CreateButton({
+   Name = "Infinite Jump Toggle",
+   Callback = function()
+       --Toggles the infinite jump between on or off on every script run
+_G.infinjump = not _G.infinjump
+
+if _G.infinJumpStarted == nil then
+	--Ensures this only runs once to save resources
+	_G.infinJumpStarted = true
+	
+	--Notifies readiness
+	game.StarterGui:SetCore("SendNotification", {Title="Youtube Hub"; Text="Infinite Jump Activated!"; Duration=5;})
+
+	--The actual infinite jump
+	local plr = game:GetService('Players').LocalPlayer
+	local m = plr:GetMouse()
+	m.KeyDown:connect(function(k)
+		if _G.infinjump then
+			if k:byte() == 32 then
+			humanoid = game:GetService'Players'.LocalPlayer.Character:FindFirstChildOfClass('Humanoid')
+			humanoid:ChangeState('Jumping')
+			wait()
+			humanoid:ChangeState('Seated')
+			end
+		end
+	end)
+end
+   end,
+})
+
+local Slider = MainTab:CreateSlider({
+   Name = "WalkSpeed Slider",
+   Range = {1, 350},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "sliderws", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
+   end,
+})
+
+local Slider = MainTab:CreateSlider({
+   Name = "JumpPower Slider",
+   Range = {1, 350},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "sliderjp", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = (Value)
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Walkspeed",
+   PlaceholderText = "1-500",
+   RemoveTextAfterFocusLost = true,
+   Callback = function(Text)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Text)
+   end,
+})
+
+local OtherSection = MainTab:CreateSection("Other")
+
+local Toggle = MainTab:CreateToggle({
+   Name = "ยังไม่รู้จะใส่ไร",
+   CurrentValue = false,
+   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+        print("FARMING")
+   end,
+})
+
+------------------------------------------------
+-- ESP TAB
+------------------------------------------------
+local ESPTab = Window:CreateTab("👁 มองทะลุ", nil)
+
+ESPTab:CreateToggle({
+   Name = "เห็นศัตรู ( เปิดคู่กับเมนูล่างไม่ได้นะ )",
+   CurrentValue = false,
+   Callback = function(Value)
+        TeamCheckEnabled = Value
+        FriendCheckEnabled = false
+   end,
+})
+
+ESPTab:CreateToggle({
+   Name = "เห็นเพื่อน",
+   CurrentValue = false,
+   Callback = function(Value)
+        FriendCheckEnabled = Value
+        TeamCheckEnabled = false
+   end,
+})
+
+ESPTab:CreateToggle({
+   Name = "Wall Check",
+   CurrentValue = false,
+   Callback = function(Value)
+        WallCheckEnabled = Value
+   end,
+})
+
+ESPTab:CreateButton({
+   Name = "ล้าง ESP",
+   Callback = function()
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr.Character and plr.Character:FindFirstChild("Highlight") then
+                plr.Character.Highlight:Destroy()
+            end
+        end
+   end,
+})
+
+------------------------------------------------
+-- ESP CORE
+------------------------------------------------
+local function IsEnemy(p1, p2)
+	if not p1.Team or not p2.Team then
+		return true
+	end
+	return p1.Team ~= p2.Team
+end
+
+local function HasLineOfSight(fromPart, toPart)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Blacklist
+	params.FilterDescendantsInstances = {fromPart.Parent}
+
+	local dir = toPart.Position - fromPart.Position
+	local result = workspace:Raycast(fromPart.Position, dir, params)
+
+	if result then
+		return result.Instance:IsDescendantOf(toPart.Parent)
+	end
+	return false
+end
+
+------------------------------------------------
+-- ESP LOOP
+------------------------------------------------
+RunService.RenderStepped:Connect(function()
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer
+		and plr.Character
+		and plr.Character:FindFirstChild("Head")
+		and LocalPlayer.Character
+		and LocalPlayer.Character:FindFirstChild("Head") then
+
+			-- FRIEND ONLY
+			if FriendCheckEnabled and IsEnemy(LocalPlayer, plr) then
+				if plr.Character:FindFirstChild("Highlight") then
+					plr.Character.Highlight:Destroy()
+				end
+				continue
+			end
+
+			-- ENEMY ONLY
+			if TeamCheckEnabled and not IsEnemy(LocalPlayer, plr) then
+				if plr.Character:FindFirstChild("Highlight") then
+					plr.Character.Highlight:Destroy()
+				end
+				continue
+			end
+
+			-- WALL CHECK
+			if WallCheckEnabled then
+				if not HasLineOfSight(
+					LocalPlayer.Character.Head,
+					plr.Character.Head
+				) then
+					if plr.Character:FindFirstChild("Highlight") then
+						plr.Character.Highlight:Destroy()
+					end
+					continue
+				end
+			end
+
+			-- CREATE HIGHLIGHT
+			if (TeamCheckEnabled or FriendCheckEnabled) and not plr.Character:FindFirstChild("Highlight") then
+				local h = Instance.new("Highlight")
+
+				if FriendCheckEnabled then
+					h.FillColor = Color3.fromRGB(0,255,0)
+				else
+					h.FillColor = Color3.fromRGB(255,0,0)
+				end
+
+				h.OutlineColor = Color3.fromRGB(255,255,255)
+				h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				h.Parent = plr.Character
+			end
+		end
+	end
+end)
